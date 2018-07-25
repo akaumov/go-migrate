@@ -96,38 +96,38 @@ func main() {
 					},
 				},
 				{
-					Name:   "sync",
-					Usage:  "sync migrations",
+					Name:  "sync",
+					Usage: "sync migrations",
 					Flags: []cli.Flag{
 						cli.StringFlag{
-							Name:  "user",
+							Name:   "user",
 							EnvVar: "GO_MIGRATE_USER",
-							Usage: "user name",
+							Usage:  "user name",
 						},
 						cli.StringFlag{
-							Name:  "password",
+							Name:   "password",
 							EnvVar: "GO_MIGRATE_PASSWORD",
-							Usage: "password",
+							Usage:  "password",
 						},
 						cli.StringFlag{
-							Name:  "db",
+							Name:   "db",
 							EnvVar: "GO_MIGRATE_DB",
-							Usage: "db",
+							Usage:  "db",
 						},
 						cli.StringFlag{
-							Name:  "host",
+							Name:   "host",
 							EnvVar: "GO_MIGRATE_HOST",
-							Usage: "host",
+							Usage:  "host",
 						},
 						cli.IntFlag{
-							Name:  "port",
+							Name:   "port",
 							EnvVar: "GO_MIGRATE_PORT",
-							Usage: "port",
+							Usage:  "port",
 						},
 						cli.StringFlag{
-							Name:  "migrations-dir",
+							Name:   "migrations-dir",
 							EnvVar: "GO_MIGRATE_MIGRATIONS_DIR",
-							Usage: "migrations-dir",
+							Usage:  "migrations-dir",
 						},
 					},
 					Action: syncMigrations,
@@ -173,7 +173,6 @@ func main() {
 		log.Fatal(err)
 	}
 }
-
 
 func addMigration(c *cli.Context) error {
 	args := c.Args()
@@ -476,7 +475,11 @@ func syncMigrations(c *cli.Context) error {
 		migrationsDir = filepath.Join(currentDir, "migrations")
 	}
 
-	return db.Sync(userName, password, dbName, host, port)
+	lastMigrationId, err := db.Sync(userName, password, dbName, host, port)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("DB sync success: " + lastMigrationId)
+	return nil
 }
-
-

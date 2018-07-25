@@ -282,11 +282,11 @@ func applyDeleteUniqueConstraint(transaction *sql.Tx, params DeleteUniqueConstra
 	return nil
 }
 
-func Sync(userName string, password string, dbName string, host string, port int) error {
+func Sync(userName string, password string, dbName string, host string, port int) (string, error) {
 
 	migrations, err := GetList()
 	if err != nil {
-		return fmt.Errorf("can't read migrations: %v\n", err)
+		return "", fmt.Errorf("can't read migrations: %v\n", err)
 	}
 
 	dbConnectionString := fmt.Sprintf("user=%v password=%v dbname=%v host=%v port=%v sslmode=disable",
@@ -298,39 +298,40 @@ func Sync(userName string, password string, dbName string, host string, port int
 
 	db, err := sql.Open("postgres", dbConnectionString)
 	if err != nil {
-		return fmt.Errorf("can't connect to db: %v", err)
+		return "", fmt.Errorf("can't connect to db: %v", err)
 	}
 	defer func() { db.Close() }()
 
 	err = db.Ping()
 	if err != nil {
-		return fmt.Errorf("can't connect to db: %v", err)
+		return "", fmt.Errorf("can't connect to db: %v", err)
 	}
 
 	log.Println("Connected to db")
 	transaction, err := db.Begin()
 	if err != nil {
 		transaction.Rollback()
-		return fmt.Errorf("can't start transaction: %v", err)
+		return "", fmt.Errorf("can't start transaction: %v", err)
 	}
 
 	err = addMigrationsTableIfNotExist(transaction)
 	if err != nil {
 		transaction.Rollback()
-		return fmt.Errorf("can't add migration table: %v", err)
+		return "", fmt.Errorf("can't add migration table: %v", err)
 	}
 
 	currentMigrationId, err := getCurrentSyncedMigrationId(transaction)
 	if err != nil {
 		transaction.Rollback()
-		return fmt.Errorf("can't read current migration state: %v", err)
+		return "", fmt.Errorf("can't read current migration state: %v", err)
 	}
 
 	_, err = GetCurrentSnapshot()
 	if err != nil {
-		return err
+		return "", err
 	}
 
+	var lastMigration *Migration
 	isCurrentMigrationPassed := currentMigrationId == ""
 
 	for _, migration := range *migrations {
@@ -347,17 +348,28 @@ func Sync(userName string, password string, dbName string, host string, port int
 		err = applyMigrationActions(transaction, migration)
 		if err != nil {
 			transaction.Rollback()
-			return fmt.Errorf("can't apply migration %v: %v\n", migration.Id, err)
+			return "", fmt.Errorf("can't apply migration %v: %v\n", migration.Id, err)
 		}
 
 		addMigrationToMigrationsTable(transaction, migration)
 		if err != nil {
 			transaction.Rollback()
-			return fmt.Errorf("can't add migration to migrations table %v: %v\n", migration.Id, err)
+			return "", fmt.Errorf("can't add migration to migrations table %v: %v\n", migration.Id, err)
 		}
+
+		lastMigration = &migration
 	}
 
-	return transaction.Commit()
+	err = transaction.Commit()
+	if err != nil {
+		return "", err
+	}
+
+	if lastMigration != nil {
+		return lastMigration.Id, nil
+	}
+
+	return "", fmt.Errorf("no migrations")
 }
 
 func getCurrentSyncedMigrationId(transaction *sql.Tx) (string, error) {
