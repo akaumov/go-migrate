@@ -1,4 +1,4 @@
-package go_migrate
+package main
 
 import (
 	"encoding/json"
