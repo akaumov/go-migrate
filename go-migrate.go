@@ -166,6 +166,38 @@ func main() {
 				},
 			},
 		},
+		{
+			Name:  "ping",
+			Usage: "ping db",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:   "user",
+					EnvVar: "GO_MIGRATE_USER",
+					Usage:  "user name",
+				},
+				cli.StringFlag{
+					Name:   "password",
+					EnvVar: "GO_MIGRATE_PASSWORD",
+					Usage:  "password",
+				},
+				cli.StringFlag{
+					Name:   "db",
+					EnvVar: "GO_MIGRATE_DB",
+					Usage:  "db",
+				},
+				cli.StringFlag{
+					Name:   "host",
+					EnvVar: "GO_MIGRATE_HOST",
+					Usage:  "host",
+				},
+				cli.IntFlag{
+					Name:   "port",
+					EnvVar: "GO_MIGRATE_PORT",
+					Usage:  "port",
+				},
+			},
+			Action: pingDb,
+		},
 	}
 
 	err := app.Run(os.Args)
@@ -475,11 +507,41 @@ func syncMigrations(c *cli.Context) error {
 		migrationsDir = filepath.Join(currentDir, "migrations")
 	}
 
-	lastMigrationId, err := db.Sync(userName, password, dbName, host, port)
+	lastMigrationId, err := db.Sync(migrationsDir, userName, password, dbName, host, port)
 	if err != nil {
 		return err
 	}
 
 	fmt.Println("DB sync success: " + lastMigrationId)
 	return nil
+}
+
+func pingDb(c *cli.Context) error {
+
+	userName := c.String("user")
+	if userName == "" {
+		return fmt.Errorf("user name is required")
+	}
+
+	password := c.String("password")
+	if password == "" {
+		return fmt.Errorf("password name is required")
+	}
+
+	dbName := c.String("db")
+	if dbName == "" {
+		return fmt.Errorf("db name is required")
+	}
+
+	host := c.String("host")
+	if host == "" {
+		return fmt.Errorf("host is required")
+	}
+
+	port := c.Int("port")
+	if port == 0 {
+		return fmt.Errorf("port is required")
+	}
+
+	return db.PingDb(userName, password, dbName, host, port)
 }

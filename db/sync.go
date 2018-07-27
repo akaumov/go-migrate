@@ -282,7 +282,31 @@ func applyDeleteUniqueConstraint(transaction *sql.Tx, params DeleteUniqueConstra
 	return nil
 }
 
-func Sync(userName string, password string, dbName string, host string, port int) (string, error) {
+func PingDb(userName string, password string, dbName string, host string, port int) error {
+
+	dbConnectionString := fmt.Sprintf("user=%v password=%v dbname=%v host=%v port=%v sslmode=disable",
+		userName,
+		password,
+		dbName,
+		host,
+		port)
+
+	db, err := sql.Open("postgres", dbConnectionString)
+	if err != nil {
+		return fmt.Errorf("can't connect to db: %v", err)
+	}
+	defer func() { db.Close() }()
+
+	err = db.Ping()
+	if err != nil {
+		return fmt.Errorf("can't connect to db: %v", err)
+	}
+
+	log.Println("Connected to db")
+	return nil
+}
+
+func Sync(migrationsDir string, userName string, password string, dbName string, host string, port int) (string, error) {
 
 	migrations, err := GetList()
 	if err != nil {
