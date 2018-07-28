@@ -60,7 +60,7 @@ func applyAddColumn(transaction *sql.Tx, params AddColumnParams) error {
 
 	defaultValueParam := ""
 	if params.DefaultValue != "" {
-		defaultValueParam = fmt.Sprintf("DEFAULT '%v';", params.DefaultValue)
+		defaultValueParam = fmt.Sprintf("DEFAULT %v;", params.DefaultValue)
 	}
 
 	query := fmt.Sprintf(`
@@ -70,7 +70,7 @@ func applyAddColumn(transaction *sql.Tx, params AddColumnParams) error {
 
 	_, err := transaction.Exec(query)
 	if err != nil {
-		return fmt.Errorf("can't add column '%v' to table '%v': %v\n", params.Column, params.Table, err)
+		return fmt.Errorf("can't add column '%v' to table '%v': %v \n", params.Column, params.Table, err, query)
 	}
 
 	return nil

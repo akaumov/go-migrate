@@ -10,6 +10,9 @@ import (
 	"github.com/urfave/cli"
 	"github.com/akaumov/go-migrate/db"
 	"path/filepath"
+
+	"github.com/ghodss/yaml"
+	"errors"
 )
 
 func main() {
@@ -24,16 +27,37 @@ func main() {
 				{
 					Name:   "add",
 					Usage:  "add migrationDescription",
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name: "o",
+							Usage: "--o yaml|json",
+							Value: "yaml",
+						},
+					},
 					Action: addMigration,
 				},
 				{
 					Name:   "list",
 					Usage:  "return migrations",
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name: "o",
+							Usage: "--o yaml|json",
+							Value: "yaml",
+						},
+					},
 					Action: listMigrations,
 				},
 				{
 					Name:   "snapshot",
 					Usage:  "return snapshot",
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name: "o",
+							Usage: "--o yaml|json",
+							Value: "yaml",
+						},
+					},
 					Action: migrationSnapshot,
 				},
 				{
@@ -210,7 +234,16 @@ func addMigration(c *cli.Context) error {
 	args := c.Args()
 	description := args.Get(0)
 
-	migrationFileName, err := db.AddMigration(description)
+	outputFormat := c.String("o")
+
+	switch outputFormat {
+	case "json":
+	case "yaml":
+	default:
+		return errors.New("wrong output format")
+	}
+
+	migrationFileName, err := db.AddMigration(description, db.Format(outputFormat))
 	if err == nil {
 		fmt.Println(migrationFileName)
 	}
@@ -354,7 +387,16 @@ func listMigrations(c *cli.Context) error {
 		return err
 	}
 
-	packedMigrations, _ := json.MarshalIndent(migrations, "", "  ")
+	var packedMigrations []byte
+
+	switch c.String("o") {
+	case "yaml":
+		packedMigrations, _ = yaml.Marshal(migrations)
+	case "json":
+		packedMigrations, _ = json.MarshalIndent(migrations, "", "  ")
+	default:
+		return errors.New("wrong output format")
+	}
 
 	fmt.Println(string(packedMigrations))
 	return nil
@@ -461,8 +503,18 @@ func migrationSnapshot(c *cli.Context) error {
 		return err
 	}
 
-	textSnapshot, _ := json.MarshalIndent(*snapshot, "", "  ")
-	log.Println(string(textSnapshot))
+	var textSnapshot []byte
+
+	switch c.String("o") {
+	case "yaml":
+		textSnapshot, _ = yaml.Marshal(*snapshot)
+	case "json":
+		textSnapshot, _ = json.MarshalIndent(*snapshot, "", "  ")
+	default:
+		return errors.New("wrong output format")
+	}
+
+	fmt.Println(string(textSnapshot))
 	return nil
 }
 

@@ -10,10 +10,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ghodss/yaml"
+
 	_ "github.com/lib/pq"
 )
 
 const migrationsDirectoryName = "migrations"
+
+type Format string
+
+const (
+	YAML Format = "yaml"
+	JSON Format = "json"
+)
 
 type ColumnName string
 
@@ -106,7 +115,7 @@ func GetMigrationsDirectoryPath() (string, error) {
 	return directory, nil
 }
 
-func AddMigration(description string) (string, error) {
+func AddMigration(description string, outputFormat Format) (string, error) {
 
 	dateId := time.Now().UTC().Format("20060102150405")
 
@@ -121,9 +130,9 @@ func AddMigration(description string) (string, error) {
 
 	var fileName string
 	if descriptionId != "" {
-		fileName = fmt.Sprintf("%v_%v.json", dateId, descriptionId)
+		fileName = fmt.Sprintf("%v_%v.%v", dateId, descriptionId, outputFormat)
 	} else {
-		fileName = fmt.Sprintf("%v.json", dateId)
+		fileName = fmt.Sprintf("%v.%v", dateId, outputFormat)
 	}
 
 	migration := Migration{
@@ -150,7 +159,15 @@ func AddMigration(description string) (string, error) {
 		}
 	}
 
-	packedMigration, err := json.MarshalIndent(migration, "", "  ")
+	var packedMigration []byte
+
+	switch outputFormat {
+	case JSON:
+		packedMigration, _ = json.MarshalIndent(migration, "", "  ")
+	case YAML:
+		packedMigration, _ = yaml.Marshal(migration)
+	}
+
 	if err != nil {
 		return "", err
 	}

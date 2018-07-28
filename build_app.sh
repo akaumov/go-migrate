@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 mkdir build
 
 APP_PATH=github.com/akaumov/go-migrate

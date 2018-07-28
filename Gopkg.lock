@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/ghodss/yaml"
+  packages = ["."]
+  revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/lib/pq"
   packages = [
@@ -16,9 +22,15 @@
   revision = "cfb38830724cc34fedffe9a2a29fb54fa9169cd1"
   version = "v1.20.0"
 
+[[projects]]
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
+  version = "v2.2.1"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f239ac2639b6ec4390dfd49a096074194315c6e15f22b8c69657f8cbced2242e"
+  inputs-digest = "fa48b35d92c0dbff2cabd5b88673991654fabb5bd9eb9e76a03394f958c20cc4"
   solver-name = "gps-cdcl"
   solver-version = 1
