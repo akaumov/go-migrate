@@ -1,4 +1,4 @@
-package db
+package lib
 
 import (
 	"database/sql"
@@ -306,96 +306,6 @@ func PingDb(userName string, password string, dbName string, host string, port i
 	return nil
 }
 
-func Sync(migrationsDir string, userName string, password string, dbName string, host string, port int) (string, error) {
-
-	migrations, err := GetList()
-	if err != nil {
-		return "", fmt.Errorf("can't read migrations: %v\n", err)
-	}
-
-	dbConnectionString := fmt.Sprintf("user=%v password=%v dbname=%v host=%v port=%v sslmode=disable",
-		userName,
-		password,
-		dbName,
-		host,
-		port)
-
-	db, err := sql.Open("postgres", dbConnectionString)
-	if err != nil {
-		return "", fmt.Errorf("can't connect to db: %v", err)
-	}
-	defer func() { db.Close() }()
-
-	err = db.Ping()
-	if err != nil {
-		return "", fmt.Errorf("can't connect to db: %v", err)
-	}
-
-	log.Println("Connected to db")
-	transaction, err := db.Begin()
-	if err != nil {
-		transaction.Rollback()
-		return "", fmt.Errorf("can't start transaction: %v", err)
-	}
-
-	err = addMigrationsTableIfNotExist(transaction)
-	if err != nil {
-		transaction.Rollback()
-		return "", fmt.Errorf("can't add migration table: %v", err)
-	}
-
-	currentMigrationId, err := getCurrentSyncedMigrationId(transaction)
-	if err != nil {
-		transaction.Rollback()
-		return "", fmt.Errorf("can't read current migration state: %v", err)
-	}
-
-	_, err = GetCurrentSnapshot()
-	if err != nil {
-		return "", err
-	}
-
-	var lastMigration *Migration
-	isCurrentMigrationPassed := currentMigrationId == ""
-
-	for _, migration := range *migrations {
-
-		if migration.Id == currentMigrationId {
-			isCurrentMigrationPassed = true
-			continue
-		}
-
-		if !isCurrentMigrationPassed {
-			continue
-		}
-
-		err = applyMigrationActions(transaction, migration)
-		if err != nil {
-			transaction.Rollback()
-			return "", fmt.Errorf("can't apply migration %v: %v\n", migration.Id, err)
-		}
-
-		addMigrationToMigrationsTable(transaction, migration)
-		if err != nil {
-			transaction.Rollback()
-			return "", fmt.Errorf("can't add migration to migrations table %v: %v\n", migration.Id, err)
-		}
-
-		lastMigration = &migration
-	}
-
-	err = transaction.Commit()
-	if err != nil {
-		return "", err
-	}
-
-	if lastMigration != nil {
-		return lastMigration.Id, nil
-	}
-
-	return "", fmt.Errorf("no migrations")
-}
-
 func getCurrentSyncedMigrationId(transaction *sql.Tx) (string, error) {
 
 	row := transaction.QueryRow("SELECT id FROM _migrations  ORDER BY id DESC  LIMIT 1")
@@ -409,7 +319,7 @@ func getCurrentSyncedMigrationId(transaction *sql.Tx) (string, error) {
 	return migrationId, err
 }
 
-func applyMigrationActions(transaction *sql.Tx, migration Migration) error {
+func applyMigrationActions(transaction *sql.Tx, migration Migration, handler Handler) error {
 
 	fmt.Println(migration.Id)
 
@@ -421,6 +331,8 @@ func applyMigrationActions(transaction *sql.Tx, migration Migration) error {
 		if err != nil {
 			return fmt.Errorf("can't decode action %v\n", err)
 		}
+
+		handler.BeforeAction(transaction, &migration, method, params)
 
 		switch method {
 		case "addTable":
@@ -454,6 +366,8 @@ func applyMigrationActions(transaction *sql.Tx, migration Migration) error {
 			err = applyDeleteUniqueConstraint(transaction, params.(DeleteUniqueConstraintParams))
 			break
 		}
+
+		handler.AfterAction(transaction, &migration, method, params)
 
 		if err != nil {
 			fmt.Println("#"+strconv.Itoa(index), method, "error")
