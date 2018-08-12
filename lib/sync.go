@@ -332,7 +332,7 @@ func applyMigrationActions(transaction *sql.Tx, migration Migration, handler Han
 			return fmt.Errorf("can't decode action %v\n", err)
 		}
 
-		handler.BeforeAction(transaction, &migration, method, params)
+		handler.BeforeAction(transaction, &migration, index, method, params)
 
 		switch method {
 		case "addTable":
@@ -367,7 +367,7 @@ func applyMigrationActions(transaction *sql.Tx, migration Migration, handler Han
 			break
 		}
 
-		handler.AfterAction(transaction, &migration, method, params)
+		handler.AfterAction(transaction, &migration, index, method, params)
 
 		if err != nil {
 			fmt.Println("#"+strconv.Itoa(index), method, "error")

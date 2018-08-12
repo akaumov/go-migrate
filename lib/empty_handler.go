@@ -9,11 +9,11 @@ func (*EmptyHandler) BeforeMigration(transaction *sql.Tx, migration *Migration) 
 	return nil
 }
 
-func (*EmptyHandler) BeforeAction(transaction *sql.Tx, migration *Migration, method string, params interface{}) error {
+func (*EmptyHandler) BeforeAction(transaction *sql.Tx, migration *Migration, index int, method string, params interface{}) error {
 	return nil
 }
 
-func (*EmptyHandler) AfterAction(transaction *sql.Tx, migration *Migration, method string, params interface{}) error {
+func (*EmptyHandler) AfterAction(transaction *sql.Tx, migration *Migration, index int, method string, params interface{}) error {
 	return nil
 }
 
