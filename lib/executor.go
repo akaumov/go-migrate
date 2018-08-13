@@ -72,7 +72,11 @@ func Execute(migrations *[]Migration, dbParams DBParams, handler Handler) (strin
 			continue
 		}
 
-		handler.BeforeMigration(transaction, &migration)
+		err = handler.BeforeMigration(transaction, &migration)
+		if err != nil {
+			transaction.Rollback()
+			return "", fmt.Errorf("can't apply migration %v: %v\n", migration.Id, err)
+		}
 
 		err = applyMigrationActions(transaction, migration, handler)
 		if err != nil {
@@ -80,13 +84,18 @@ func Execute(migrations *[]Migration, dbParams DBParams, handler Handler) (strin
 			return "", fmt.Errorf("can't apply migration %v: %v\n", migration.Id, err)
 		}
 
-		addMigrationToMigrationsTable(transaction, migration)
+		err = addMigrationToMigrationsTable(transaction, migration)
 		if err != nil {
 			transaction.Rollback()
 			return "", fmt.Errorf("can't add migration to migrations table %v: %v\n", migration.Id, err)
 		}
 
-		handler.AfterMigration(transaction, &migration)
+		err = handler.AfterMigration(transaction, &migration)
+		if err != nil {
+			transaction.Rollback()
+			return "", fmt.Errorf("can't add migration to migrations table %v: %v\n", migration.Id, err)
+		}
+
 		lastMigration = &migration
 	}
 

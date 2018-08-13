@@ -96,6 +96,8 @@ type DeleteRelationParams struct {
 type Action struct {
 	Method string          `json:"method"`
 	Params json.RawMessage `json:"params"`
+	Before        *string  `json:"before"`
+	After         *string  `json:"after"`
 }
 
 type Migration struct {
@@ -103,6 +105,8 @@ type Migration struct {
 	Id            string   `json:"id"`
 	Description   string   `json:"description"`
 	Actions       []Action `json:"actions"`
+	Before        *string  `json:"before"`
+	After         *string  `json:"after"`
 }
 
 func GetMigrationsDirectoryPath() (string, error) {
