@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-
 	_ "github.com/lib/pq"
 )
 

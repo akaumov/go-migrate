@@ -3,15 +3,17 @@ package lib
 import (
 	"fmt"
 	"database/sql"
+
+	_ "github.com/lib/pq"
 	"log"
 )
 
 type DBParams struct {
-	User string
+	User     string
 	Password string
-	Name string
-	Host string
-	Port int
+	Name     string
+	Host     string
+	Port     int
 }
 
 func Execute(migrations *[]Migration, dbParams DBParams, handler Handler) (string, error) {

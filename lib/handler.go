@@ -1,6 +1,9 @@
 package lib
 
-import "database/sql"
+import (
+	"database/sql"
+	_ "github.com/lib/pq"
+)
 
 type Handler interface {
 	BeforeMigration(transaction *sql.Tx, migration *Migration) error
