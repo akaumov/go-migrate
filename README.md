@@ -1,4 +1,4 @@
-#go-migrate
+# go-migrate
 > Generate postgres table migrations from JSON/YAML files
 
 ## Installation
